@@ -147,19 +147,23 @@ for y in range(invRows):
         invadersY.append(y*ySpc+ySpc)
         invadersF.append(random.choice(['a','b','c','d','e','z','g','h','i']))
 
-lastRow = []
-cols = []
-for i in range(len(invadersX)):
-    found = False
-    for col in cols:
-        if invadersX[i] == invadersX[col[0]]:
-            col.append(i)
-            found = True
-    if not found:
-        cols.append([i])
+def calcLastRow():
+    lastRow = []
+    cols = []
+    for i in range(len(invadersX)):
+        found = False
+        for col in cols:
+            if invadersX[i] == invadersX[col[0]]:
+                col.append(i)
+                found = True
+        if not found:
+            cols.append([i])
 
-for col in cols:
-    lastRow.append(col[-1])
+    for col in cols:
+        lastRow.append(col[-1])
+    return lastRow
+
+lastRow = calcLastRow()
 
 clock = pygame.time.Clock()
 gameOver = False
@@ -207,7 +211,16 @@ while not gameOver:
     
     if pBulletY > -bulletH:
         pBulletY -= bulletSpeed
-
+        for i in range(len(invadersX)-1):
+            try:
+                if rectRectIntersect((pBulletX,pBulletY,bulletW,bulletH),(invadersX[i],invadersY[i],invaderWidth,invaderHeight)):
+                    invadersX.remove(invadersX[i])
+                    invadersY.remove(invadersY[i])
+                    pBulletX = -100
+                    pBulletY = -100
+            except:
+                pass
+        lastRow = calcLastRow()
     # Invaders Bullet Movement
     for lRInv in lastRow:
         if random.uniform(0,100) < invFireChance:
