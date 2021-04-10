@@ -8,7 +8,7 @@ screen.fill((0,0,0))
 #font
 pygame.font.init()
 invaderHeight = 32
-invaderFont = pygame.font.Font("PyGames/Invaders.ttf",invaderHeight)
+invaderFont = pygame.font.Font("pixel-invaders.ttf",invaderHeight)
 
 # audio
 '''
@@ -64,31 +64,34 @@ pWidth = 80
 pHeight = 40
 pX = screenWidth//2 - pWidth//2
 pY = screenHeight - pHeight - padding
-playerSpeed = 4
+playerSpeed = 10
 pCol = (0,255,0)
 
 # Bullets
-bulletW = 10
-bulletH = 30
+bulletW = 3
+bulletH = 11
 bulletSpeed = 4
-bulletCol = (255,0,0)
+
 
 # Player Bullet
 pBulletX = -100
 pBulletY = -100
+pBulletCol = (0,0,255)
 
 # Invader Bullets
 invBullets = []
+invFireChance = 0.5 # % of time.
+invBulletCol = (255,0,0)
 
 # Shields
 shields = []
-shieldW = 150
-shieldH = 80
+shieldW = 80
+shieldH = 40
 numShields = 4
 shieldSpace = screenWidth // (numShields + 1)
 sheildY = screenHeight - shieldH - pHeight - padding * 2
 for s in range(numShields):
-    shields.append((Multiblock(shieldSpace,sheildY,shieldW,shieldH,nx=shieldW//10,ny=shieldH//10 )))
+    shields.append(Multiblock(shieldSpace,sheildY,shieldW,shieldH,nx=shieldW//10,ny=shieldH//10 ))
 
 # Invaders
 invaderCol = (0,255,0)
@@ -103,7 +106,7 @@ for y in range(invRows):
     for x in range(invCols):
         invadersX.append(x*xSpc+xSpc)
         invadersY.append(y*ySpc+ySpc)
-        invadersF.append(random.choice(['a','b','c','d','e','f','g','h','i']))
+        invadersF.append(random.choice(['a','b','c','d','e','z','g','h','i']))
 
 lastRow = []
 cols = []
@@ -120,29 +123,70 @@ for col in cols:
     lastRow.append(col[-1])
 
 gameOver = False
+moveDir = 0
+playerFire = False
 while not gameOver:
+    # interactivity ------------
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             gameOver = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                pass
+                moveDir -= playerSpeed
+            if event.key == pygame.K_RIGHT:
+                moveDir += playerSpeed
+            if event.key == pygame.K_SPACE:
+                playerFire = True
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                moveDir = 0
     
-    # interactivity ------------
+    # Player Movement
+    pX += moveDir
+
+    # Invaders Movment
+
+    # Bullets
+    # Player Bullet Movement
+    if playerFire and pBulletY < -bulletH:
+        pBulletX = pX + pWidth // 2 - bulletW // 2
+        pBulletY = pY - bulletH
+        playerFire = False
+    
+    if pBulletY > -bulletH:
+        pBulletY -= bulletSpeed
+
+    # Invaders Bullet Movement
+    for lRInv in lastRow:
+        if random.uniform(0,100) < invFireChance:
+            invBullets.append([invadersX[lRInv]+invaderHeight//4,invadersY[lRInv] + invaderHeight//2,  bulletW,bulletH])
+
+    for invBull in invBullets:
+        try:
+            invBull[1] += bulletSpeed
+            # if intersect with player
+            # TODO: make intersection code
+            if invBull[1] > screenHeight:
+                invBullets.remove(invBull)
+        except:
+            pass
 
 
 
     # Drawing ------------------ 
 
+    # Clear Screen
+    screen.fill((0,0,10))
+
     # Player
     pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
 
     # Player Bullet
-    pygame.draw.rect(screen,bulletCol,(pBulletX,pBulletY,bulletW,bulletH))
+    pygame.draw.rect(screen,pBulletCol,(pBulletX,pBulletY,bulletW,bulletH))
 
     # Invader Bullets
     for bullet in invBullets:
-        pygame.draw.rect(screen, bulletCol,bullet)
+        pygame.draw.rect(screen, invBulletCol,bullet)
 
     # Sheilds
     for shield in shields:
@@ -158,3 +202,4 @@ while not gameOver:
     pygame.display.update()
 pygame.quit()
 quit()
+#THE END :D
