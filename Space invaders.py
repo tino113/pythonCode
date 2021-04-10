@@ -21,7 +21,7 @@ for y in range(rows):
     for x in range(columns):
         invadersX.append(x*xSpc+xSpc)
         invadersY.append(y*ySpc+ySpc)
-        invadersF.append(random.choice(['a','b','c','d','e','f','g','h','i']))
+        invadersF.append(random.choice(['a','b','c','d','e','z','g','h','i']))
 
 gameOver = False
 while not gameOver:
