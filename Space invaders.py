@@ -18,6 +18,40 @@ invMoveSnds = [invMove1,invMove2,invMove3,invMove4]
 spaceship = pygame.mixer.Sound("")
 '''
 
+def pointRectIntersect(pt, r):
+    rx,ry,rw,rh = r[0],r[1],r[2],r[3]
+    ptx, pty = pt[0], pt[1]
+    if ptx > rx:
+        if ptx < rx + rw:
+            if pty > ry:
+                if pty < ry + rh:
+                    return True
+    return False
+
+def rectRectIntersect(a,b):
+    ax,ay,aw,ah = a[0],a[1],a[2],a[3]
+    bx,by,bw,bh = b[0],b[1],b[2],b[3]
+
+    # test all 4 corners of a inside b?
+    if pointRectIntersect((ax,ay),b):
+        return True
+    elif pointRectIntersect((ax+aw,ay),b):
+        return True
+    elif pointRectIntersect((ax+aw,ay+ah),b):
+        return True
+    elif pointRectIntersect((ax,ay+ah),b):
+        return True
+    # test all 4 corners of b inside a?
+    elif pointRectIntersect((bx,by),a):
+        return True
+    elif pointRectIntersect((bx+bw,by),a):
+        return True
+    elif pointRectIntersect((bx+bw,by+bh),a):
+        return True
+    elif pointRectIntersect((bx,by+bh),a):
+        return True
+    return False
+
 # Dynamic blocks
 class Multiblock():
     def __init__(self,x,y,w,h,col = (255,255,255), nx = 5,ny = 5):
@@ -65,7 +99,7 @@ pCol = (0,255,0)
 # Bullets
 bulletW = 3
 bulletH = 11
-bulletSpeed = 4
+bulletSpeed = 8
 
 
 # Player Bullet
@@ -138,14 +172,14 @@ while not gameOver:
         if event.type == pygame.QUIT:
             gameOver = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
+            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                 moveDir = -playerSpeed
-            if event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                 moveDir = playerSpeed
             if event.key == pygame.K_SPACE:
                 playerFire = True
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
     
     # Player Movement
