@@ -1,13 +1,11 @@
 import pygame, random
 
-# remake
-
 pygame.init()
 width, height = 800, 600
 screen = pygame.display.set_mode((width,height))
 screen.fill((0,0,0))
 
-#font
+#font goes here
 pygame.font.init()
 invaderHeight = 32
 invaderFont = pygame.font.Font("pixel-invaders.ttf",invaderHeight)
