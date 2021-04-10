@@ -5,11 +5,6 @@ screenWidth, screenHeight = 800, 600
 screen = pygame.display.set_mode((screenWidth,screenHeight))
 screen.fill((0,0,0))
 
-#font
-pygame.font.init()
-invaderHeight = 32
-invaderFont = pygame.font.Font("pixel-invaders.ttf",invaderHeight)
-
 # audio
 '''
 pygame.mixer.init()
@@ -94,12 +89,22 @@ for s in range(numShields):
     shields.append(Multiblock(shieldSpace,sheildY,shieldW,shieldH,nx=shieldW//10,ny=shieldH//10 ))
 
 # Invaders
+invaderHeight = 32
+invaderWidth = int(invaderHeight)
 invaderCol = (0,255,0)
+invTimer = 1000# how many milliseconds before they move
+
+#font
+pygame.font.init()
+invaderFont = pygame.font.Font("pixel-invaders.ttf",invaderHeight)
+
+# layout invaders
 invadersX = []
 invadersY = []
 invadersF = []
 invRows = 5
 invCols = 10
+invDir = 1
 xSpc = screenWidth // (invRows *3)
 ySpc = xSpc
 for y in range(invRows):
@@ -122,9 +127,11 @@ for i in range(len(invadersX)):
 for col in cols:
     lastRow.append(col[-1])
 
+clock = pygame.time.Clock()
 gameOver = False
 moveDir = 0
 playerFire = False
+timeCounter = 0
 while not gameOver:
     # interactivity ------------
     for event in pygame.event.get():
@@ -132,9 +139,9 @@ while not gameOver:
             gameOver = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                moveDir -= playerSpeed
+                moveDir = -playerSpeed
             if event.key == pygame.K_RIGHT:
-                moveDir += playerSpeed
+                moveDir = playerSpeed
             if event.key == pygame.K_SPACE:
                 playerFire = True
         if event.type == pygame.KEYUP:
@@ -145,7 +152,18 @@ while not gameOver:
     pX += moveDir
 
     # Invaders Movment
-
+    if timeCounter >= invTimer:
+        timeCounter -= invTimer
+        for i in range(len(invadersX)):
+            invadersX[i] += invaderWidth * invDir
+        for i in range(len(invadersX)):
+            if invadersX[i] >= screenWidth or invadersX[i] <= 0:
+                invDir *= -1
+                invTimer *= 0.90 # 10% faster
+                for i in range(len(invadersY)):
+                    invadersY[i] += invaderHeight
+                    invadersX[i] += invaderWidth * invDir
+                break
     # Bullets
     # Player Bullet Movement
     if playerFire and pBulletY < -bulletH:
@@ -159,7 +177,7 @@ while not gameOver:
     # Invaders Bullet Movement
     for lRInv in lastRow:
         if random.uniform(0,100) < invFireChance:
-            invBullets.append([invadersX[lRInv]+invaderHeight//4,invadersY[lRInv] + invaderHeight//2,  bulletW,bulletH])
+            invBullets.append([invadersX[lRInv]+invaderWidth//4,invadersY[lRInv] + invaderHeight//2,  bulletW,bulletH])
 
     for invBull in invBullets:
         try:
@@ -199,6 +217,8 @@ while not gameOver:
         invaderRect.topleft = (invadersX[i],invadersY[i])
         screen.blit(invaderCharacter, invaderRect)
 
+    
+    timeCounter += clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
     pygame.display.update()
 pygame.quit()
 quit()
