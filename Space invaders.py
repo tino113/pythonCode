@@ -80,7 +80,7 @@ pBulletCol = (0,0,255)
 
 # Invader Bullets
 invBullets = []
-invFireChance = 0.5 # % of time.
+invFireChance = 0.25 # % of time.
 invBulletCol = (255,0,0)
 
 # Shields
