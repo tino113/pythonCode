@@ -5,17 +5,17 @@ screenWidth, screenHeight = 800, 600
 screen = pygame.display.set_mode((screenWidth,screenHeight))
 
 # audio
-'''
 pygame.mixer.init()
-fireSound = pygame.mixer.Sound("")
-invDeath = pygame.mixer.Sound("")
-invMove1 = pygame.mixer.Sound("")
-invMove2 = pygame.mixer.Sound("")
-invMove3 = pygame.mixer.Sound("")
-invMove4 = pygame.mixer.Sound("")
-invMoveSnds = [invMove1,invMove2,invMove3,invMove4]
-spaceship = pygame.mixer.Sound("")
-'''
+fireSnd = pygame.mixer.Sound("shoot.wav")
+invDeathSnd = pygame.mixer.Sound("invaderkilled.wav")
+invMove1Snd = pygame.mixer.Sound("fastinvader1.wav")
+invMove2Snd = pygame.mixer.Sound("fastinvader2.wav")
+invMove3Snd = pygame.mixer.Sound("fastinvader3.wav")
+invMove4Snd = pygame.mixer.Sound("fastinvader4.wav")
+invMoveSnds = [invMove1Snd,invMove2Snd,invMove3Snd,invMove4Snd]
+playerDeathSnd = pygame.mixer.Sound("explosion.wav")
+#spaceship = pygame.mixer.Sound("")
+
 
 def pointRectIntersect(pt, r):
     rx,ry,rw,rh = r[0],r[1],r[2],r[3]
@@ -154,6 +154,7 @@ class Invaders():
         self.invTimer = invTime# how many milliseconds before they move
         self.lastRow = []
         self.invaderFont = pygame.font.Font(invFont,self.invaderHeight)
+        self.soundCount = 0
         self.initInvaders()
 
     def initInvaders(self):
@@ -180,6 +181,10 @@ class Invaders():
             self.lastRow.append(self.invaders[col[-1]])
 
     def move(self):
+        invMoveSnds[self.soundCount].play()
+        self.soundCount += 1
+        if self.soundCount > 3:
+            self.soundCount = 0
         for invader in self.invaders:
             invader.x += self.invaderWidth * self.invDir
         for invader in self.invaders:
@@ -196,6 +201,7 @@ class Invaders():
             if invader.hitRect(r):
                 self.invaders.remove(invader)
                 self.calcLastRow()
+                invDeathSnd.play()
                 return True
         return False
 
@@ -246,6 +252,7 @@ while not gameOver:
         pBulletX = pX + pWidth // 2 - bulletW // 2
         pBulletY = pY - bulletH
         playerFire = False
+        fireSnd.play()
     elif playerFire:
         playerFire = False
     # Player Bullet Movement if it's on screen
@@ -264,6 +271,7 @@ while not gameOver:
             invBull[1] += bulletSpeed
             # if intersect with player
             if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)):
+                playerDeathSnd.play()
                 pY = -1000
                 invBull[1] = screenHeight + 1
             # if intersect with sheild
