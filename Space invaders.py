@@ -143,7 +143,7 @@ class Invader():
         surf.blit(invaderCharacter, invaderRect)
 
 class Invaders():
-    def __init__(self, numRows, numCols, invHeight = 32, invWidth = 32, invCol = (0,255,0), invTime = 1000, invFont = "pixel-invaders.ttf"):
+    def __init__(self, numRows, numCols, invHeight = 32, invWidth = 32, invCol = (0,255,0), invTime = 1000, invFont = "invaders.ttf"):
         self.invRows = numRows
         self.invCols = numCols
         self.invaders = []
@@ -221,7 +221,7 @@ gameOver = False
 moveDir = 0
 playerFire = False
 timeCounter = 0
-allInvaders = Invaders(5,10)
+allInvaders = Invaders(5,10,invWidth=30,invHeight=30)
 while not gameOver:
     # interactivity ------------
     for event in pygame.event.get():
