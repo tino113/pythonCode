@@ -126,8 +126,15 @@ sheildY = screenHeight - shieldH - pHeight - padding * 2
 for s in range(numShields):
     shields.append(Multiblock(shieldSpace*(s+1)-shieldW//2,sheildY,shieldW,shieldH,nx=shieldW//8,ny=shieldH//8 ))
 
-# Invaders
 pygame.font.init()
+# Menus
+arcadeFont = pygame.font.Font("ARCADECLASSIC.TTF",100)
+menuFontColor = (255,255,255)
+PLAY, END, HIGHSCORE = 0, 1, 2 
+gameState = PLAY
+
+
+# Invaders
 class Invader():
     def __init__(self, x, y, w, h, f, col):
         self.x, self.y = x,y
@@ -238,72 +245,81 @@ while not gameOver:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
     
-    # Player Movement
-    pX += moveDir
+    # deal with play state
+    if gameState == PLAY:
+        # Player Movement
+        pX += moveDir
 
-    # Invaders Movment
-    if timeCounter >= allInvaders.invTimer:
-        timeCounter -= allInvaders.invTimer
-        allInvaders.move()
-    
-    # Bullets
-    # if player fires and bullet is off screen already
-    if playerFire and pBulletY < -bulletH:
-        pBulletX = pX + pWidth // 2 - bulletW // 2
-        pBulletY = pY - bulletH
-        playerFire = False
-        fireSnd.play()
-    elif playerFire:
-        playerFire = False
-    # Player Bullet Movement if it's on screen
-    if pBulletY > -bulletH:
-        pBulletY -= bulletSpeed
-        if allInvaders.destroyIfHit((pBulletX,pBulletY,bulletW,bulletH)):
-            pBulletY = -100
-        for shield in shields:
-            if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
-                    pBulletY = -100
+        # Invaders Movment
+        if timeCounter >= allInvaders.invTimer:
+            timeCounter -= allInvaders.invTimer
+            allInvaders.move()
         
-    # Invaders Bullet Movement
-    invBullets += allInvaders.fireLastRow(invFireChance)
-    for invBull in invBullets:
-        try:
-            invBull[1] += bulletSpeed
-            # if intersect with player
-            if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)):
-                playerDeathSnd.play()
-                pY = -1000
-                invBull[1] = screenHeight + 1
-            # if intersect with sheild
+        # Bullets
+        # if player fires and bullet is off screen already
+        if playerFire and pBulletY < -bulletH:
+            pBulletX = pX + pWidth // 2 - bulletW // 2
+            pBulletY = pY - bulletH
+            playerFire = False
+            fireSnd.play()
+        elif playerFire:
+            playerFire = False
+        # Player Bullet Movement if it's on screen
+        if pBulletY > -bulletH:
+            pBulletY -= bulletSpeed
+            if allInvaders.destroyIfHit((pBulletX,pBulletY,bulletW,bulletH)):
+                pBulletY = -100
             for shield in shields:
-                if shield.destroyOnHit(invBull):
+                if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
+                        pBulletY = -100
+            
+        # Invaders Bullet Movement
+        invBullets += allInvaders.fireLastRow(invFireChance)
+        for invBull in invBullets:
+            try:
+                invBull[1] += bulletSpeed
+                # if intersect with player
+                if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)):
+                    playerDeathSnd.play()
+                    pY = -1000
                     invBull[1] = screenHeight + 1
-            if invBull[1] > screenHeight:
-                invBullets.remove(invBull)
-        except:
-            pass
+                    gameState = END
+                # if intersect with sheild
+                for shield in shields:
+                    if shield.destroyOnHit(invBull):
+                        invBull[1] = screenHeight + 1
+                if invBull[1] > screenHeight:
+                    invBullets.remove(invBull)
+            except:
+                pass
 
-    # Drawing ------------------ 
+        # Drawing ------------------ 
+    
+        # Clear Screen
+        screen.fill((0,0,10))
 
-    # Clear Screen
-    screen.fill((0,0,10))
+    if gameState == PLAY:
+        # Player
+        pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
 
-    # Player
-    pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+        # Player Bullet
+        pygame.draw.rect(screen,pBulletCol,(pBulletX,pBulletY,bulletW,bulletH))
 
-    # Player Bullet
-    pygame.draw.rect(screen,pBulletCol,(pBulletX,pBulletY,bulletW,bulletH))
+        # Invader Bullets
+        for bullet in invBullets:
+            pygame.draw.rect(screen, invBulletCol, bullet)
 
-    # Invader Bullets
-    for bullet in invBullets:
-        pygame.draw.rect(screen, invBulletCol, bullet)
+        # Sheilds
+        for shield in shields:
+            shield.draw(screen)
 
-    # Sheilds
-    for shield in shields:
-        shield.draw(screen)
-
-    # Invaders
-    allInvaders.draw(screen)
+        # Invaders
+        allInvaders.draw(screen)
+    elif gameState == END:
+        gameOverText = arcadeFont.render("GAME     OVER",True,menuFontColor)
+        gameOverTextRect = gameOverText.get_rect()
+        gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
+        screen.blit(gameOverText, gameOverTextRect)
     
     timeCounter += clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
     pygame.display.update()
