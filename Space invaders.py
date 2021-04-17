@@ -241,6 +241,12 @@ while not gameOver:
                 moveDir = playerSpeed
             if event.key == pygame.K_SPACE:
                 playerFire = True
+            if event.key == pygame.K_LEFTBRACKET:
+                allInvaders.invTimer *= 1.1
+            if event.key == pygame.K_RIGHTBRACKET:
+                allInvaders.invTimer *= 0.9
+            if event.key == pygame.K_BACKSLASH:
+                allInvaders.invaders.remove(random.choice(allInvaders.invaders))
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
@@ -254,6 +260,19 @@ while not gameOver:
         if timeCounter >= allInvaders.invTimer:
             timeCounter -= allInvaders.invTimer
             allInvaders.move()
+            
+            #Check if invader intersect player
+            for inv in allInvaders.invaders:
+                if rectRectIntersect((inv.x,inv.y,inv.h,inv.w),(pX,pY,pWidth,pHeight)):
+                        playerDeathSnd.play()
+                        gameState = END
+
+        #Check if invader intersect shield
+        for inv in allInvaders.invaders:
+            for shield in shields:
+                if shield.destroyOnHit((inv.x,inv.y,inv.h,inv.w)):
+                    pass
+
         
         # Bullets
         # if player fires and bullet is off screen already
