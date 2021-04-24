@@ -174,6 +174,7 @@ class Invader():
         self.x, self.y = x,y
         self.w, self.h = w,h
         self.f = f
+        self.anim = 0
         self.c = col
     def hitRect(self,r):
         return rectRectIntersect((r[0],r[1],r[2],r[3]),(self.x,self.y,self.w, self.h))
@@ -182,6 +183,13 @@ class Invader():
         invaderRect = invaderCharacter.get_rect()
         invaderRect.topleft = (self.x,self.y)
         surf.blit(invaderCharacter, invaderRect)
+    def animate(self):
+        if self.anim == 0:
+            self.anim = 1
+            self.f = chr(ord(self.f) +1) 
+        else:
+            self.anim = 0
+            self.f = chr(ord(self.f) -1) 
 
 class Invaders():
     def __init__(self, numRows, numCols, invHeight = 32, invWidth = 32, invCol = (0,255,0), invTime = 1000, invFont = "invaders.ttf"):
@@ -199,11 +207,12 @@ class Invaders():
         self.initInvaders()
 
     def initInvaders(self):
-        xSpc = screenWidth // (self.invRows *3)
-        ySpc = xSpc
+        xSpc = self.invaderWidth * 2.1
+        ySpc = xSpc * 0.8
+        invFontLetters = ['A','C','G','E','I']
         for y in range(self.invRows):
             for x in range(self.invCols):
-                self.invaders.append(Invader(x*xSpc+xSpc,y*ySpc+ySpc,self.invaderWidth,self.invaderHeight,random.choice(['a','b','c','d','e','z','g','h','i']),self.invaderCol))
+                self.invaders.append(Invader(x*xSpc+xSpc,y*ySpc+ySpc,self.invaderWidth,self.invaderHeight,invFontLetters[y],self.invaderCol))
         self.calcLastRow()
 
     def calcLastRow(self):
@@ -228,6 +237,7 @@ class Invaders():
             self.soundCount = 0
         for invader in self.invaders:
             invader.x += self.invaderWidth * self.invDir
+            invader.animate()
         for invader in self.invaders:
             if invader.x >= screenWidth or invader.x <= 0:
                 self.invDir *= -1
@@ -267,7 +277,7 @@ playerFire = False
 timeCounter = 0
 ufoCounter = 0
 flashCounter = 0
-allInvaders = Invaders(5,10,invWidth=30,invHeight=30)
+allInvaders = Invaders(4,10,invWidth=25,invHeight=25)
 while not gameOver:
     # interactivity ------------
     for event in pygame.event.get():
@@ -348,9 +358,9 @@ while not gameOver:
                 # if <= 5 invaders speed up 10% MORE each kill
                 if allInvaders.getNum() <= 5:
                     allInvaders.invTimer *= 0.9
-                # if <= 3 invaders speed up 10% MORE each kill
+                # if <= 3 invaders speed up 5% MORE each kill
                 if allInvaders.getNum() <= 3:
-                    allInvaders.invTimer *= 0.9
+                    allInvaders.invTimer *= 0.95
             for shield in shields:
                 if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
                     pBulletY = -100
