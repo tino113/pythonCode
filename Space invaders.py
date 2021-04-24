@@ -138,7 +138,7 @@ pygame.font.init()
 arcadeFont = pygame.font.Font("ARCADECLASSIC.TTF",100)
 arcadeFontSmall = pygame.font.Font("ARCADECLASSIC.TTF",30)
 menuFontColor = (255,255,255)
-PLAY, END, HIGHSCORE = 0, 1, 2 
+PLAY, END, HIGHSCORE, WIN = 0, 1, 2, 3
 gameState = PLAY
 score = 0
 invaderScore = 100
@@ -257,6 +257,9 @@ class Invaders():
         for invader in self.invaders:
             invader.draw(surf,self.invaderFont)
 
+    def getNum(self):
+        return len(self.invaders)
+
 clock = pygame.time.Clock()
 gameOver = False
 moveDir = 0
@@ -283,6 +286,7 @@ while not gameOver:
                 allInvaders.invTimer *= 0.9
             if event.key == pygame.K_BACKSLASH:
                 allInvaders.invaders.remove(random.choice(allInvaders.invaders))
+                allInvaders.calcLastRow()
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
@@ -338,6 +342,15 @@ while not gameOver:
             if allInvaders.destroyIfHit((pBulletX,pBulletY,bulletW,bulletH)):
                 pBulletY = -100
                 score += invaderScore
+                # if <= 10 invaders speed up 10% each kill
+                if allInvaders.getNum() <= 10:
+                    allInvaders.invTimer *= 0.9
+                # if <= 5 invaders speed up 10% MORE each kill
+                if allInvaders.getNum() <= 5:
+                    allInvaders.invTimer *= 0.9
+                # if <= 3 invaders speed up 10% MORE each kill
+                if allInvaders.getNum() <= 3:
+                    allInvaders.invTimer *= 0.9
             for shield in shields:
                 if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
                     pBulletY = -100
@@ -373,10 +386,14 @@ while not gameOver:
             except:
                 pass
 
-        # Drawing ------------------ 
-    
-        # Clear Screen
-        screen.fill((0,0,10))
+        # Win condition
+        if allInvaders.getNum() == 0:
+            gameState = WIN
+
+    # Drawing ------------------ 
+
+    # Clear Screen
+    screen.fill((0,0,10))
 
     if gameState == PLAY:
         # Player
@@ -426,6 +443,12 @@ while not gameOver:
 
     elif gameState == END:
         gameOverText = arcadeFont.render("GAME     OVER",True,menuFontColor)
+        gameOverTextRect = gameOverText.get_rect()
+        gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
+        screen.blit(gameOverText, gameOverTextRect)
+    
+    elif gameState == WIN:
+        gameOverText = arcadeFont.render("YOU     WIN",True,menuFontColor)
         gameOverTextRect = gameOverText.get_rect()
         gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
         screen.blit(gameOverText, gameOverTextRect)
