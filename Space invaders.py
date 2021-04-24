@@ -14,6 +14,9 @@ invMove3Snd = pygame.mixer.Sound("fastinvader3.wav")
 invMove4Snd = pygame.mixer.Sound("fastinvader4.wav")
 invMoveSnds = [invMove1Snd,invMove2Snd,invMove3Snd,invMove4Snd]
 playerDeathSnd = pygame.mixer.Sound("explosion.wav")
+ufoLowSnd = pygame.mixer.Sound("ufo_lowpitch.wav")
+ufoHighSnd = pygame.mixer.Sound("ufo_highpitch.wav")
+ufoSnds = [ufoLowSnd,ufoHighSnd]
 #spaceship = pygame.mixer.Sound("")
 
 
@@ -105,7 +108,6 @@ bulletW = 3
 bulletH = 11
 bulletSpeed = 8
 
-
 # Player Bullet
 pBulletX = -100
 pBulletY = -100
@@ -129,10 +131,37 @@ for s in range(numShields):
 pygame.font.init()
 # Menus
 arcadeFont = pygame.font.Font("ARCADECLASSIC.TTF",100)
+arcadeFontSmall = pygame.font.Font("ARCADECLASSIC.TTF",30)
 menuFontColor = (255,255,255)
 PLAY, END, HIGHSCORE = 0, 1, 2 
 gameState = PLAY
+score = 0
+invaderScore = 100
 
+# UFO
+ufoMinTime = 10000
+ufoMaxTime = 1000000
+ufoChance = 0.001
+ufoAlive = False
+class UFO():
+    def __init__(self, width = 40,height = 30, col = (255,255,255), speed = 4, score = 1000, font = "invaders.ttf"):
+        self.w, self.h = width, height
+        self.x, self.y = screenWidth + self.w, padding
+        self.c = col
+        self.font = pygame.font.Font(font,self.h)
+        self.f = random.choice(["1","2"])
+        self.speed = speed
+        self.score = score
+        self.sound = random.choice(ufoSnds)
+    def move(self):
+        self.x -= self.speed
+    def hitRect(self,r):
+        return rectRectIntersect((r[0],r[1],r[2],r[3]),(self.x,self.y,self.w, self.h))
+    def draw(self, surf):
+        ufoCharacter = self.font.render(self.f,True,self.c)
+        ufoRect = ufoCharacter.get_rect()
+        ufoRect.topleft = (self.x,self.y)
+        surf.blit(ufoCharacter, ufoRect)
 
 # Invaders
 class Invader():
@@ -228,6 +257,7 @@ gameOver = False
 moveDir = 0
 playerFire = False
 timeCounter = 0
+ufoCounter = 0
 allInvaders = Invaders(5,10,invWidth=30,invHeight=30)
 while not gameOver:
     # interactivity ------------
@@ -273,6 +303,19 @@ while not gameOver:
                 if shield.destroyOnHit((inv.x,inv.y,inv.h,inv.w)):
                     pass
 
+        # generate UFO randomly
+        if ((ufoCounter > ufoMinTime and random.uniform(0,1) < ufoChance) or ufoCounter > ufoMaxTime) and not ufoAlive:
+            ufo = UFO()
+            ufo.sound.play(-1) # play on repeat
+            ufoAlive = True
+            ufoCounter = 0
+        # UFO movement
+        if ufoAlive:
+            ufo.move()
+            if ufo.x < 0 - ufo.w:
+                ufoAlive = False
+                ufo.sound.stop()
+                ufo = None
         
         # Bullets
         # if player fires and bullet is off screen already
@@ -288,9 +331,17 @@ while not gameOver:
             pBulletY -= bulletSpeed
             if allInvaders.destroyIfHit((pBulletX,pBulletY,bulletW,bulletH)):
                 pBulletY = -100
+                score += invaderScore
             for shield in shields:
                 if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
-                        pBulletY = -100
+                    pBulletY = -100
+            if ufoAlive:
+                if ufo.hitRect((pBulletX,pBulletY,bulletW,bulletH)):
+                    pBulletY = -100
+                    score += ufo.score
+                    ufo.sound.stop() # stop playing the UFO sound
+                    ufo = None
+                    ufoAlive = False
             
         # Invaders Bullet Movement
         invBullets += allInvaders.fireLastRow(invFireChance)
@@ -334,13 +385,26 @@ while not gameOver:
 
         # Invaders
         allInvaders.draw(screen)
+
+        # UFO
+        if ufoAlive:
+            ufo.draw(screen)
+
+        # Scores
+        scoreText = arcadeFontSmall.render("SCORE " + str(score),True,menuFontColor)
+        scoreRect = scoreText.get_rect()
+        scoreRect.topleft = (padding,padding)
+        screen.blit(scoreText,scoreRect)
+
     elif gameState == END:
         gameOverText = arcadeFont.render("GAME     OVER",True,menuFontColor)
         gameOverTextRect = gameOverText.get_rect()
         gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
         screen.blit(gameOverText, gameOverTextRect)
     
-    timeCounter += clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
+    tick = clock.tick(30)
+    timeCounter += tick # time since last tick in Milliseconds (attempts to maintain 30FPS)
+    ufoCounter += tick
     pygame.display.update()
 
 pygame.quit()
