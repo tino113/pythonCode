@@ -102,6 +102,11 @@ pX = screenWidth//2 - pWidth//2
 pY = screenHeight - pHeight - padding
 playerSpeed = 10
 pCol = (0,255,0)
+numLives = 3
+numFlashes = 12
+flashTime = 100
+flashCount = 0
+playerStart = True
 
 # Bullets
 bulletW = 3
@@ -258,6 +263,7 @@ moveDir = 0
 playerFire = False
 timeCounter = 0
 ufoCounter = 0
+flashCounter = 0
 allInvaders = Invaders(5,10,invWidth=30,invHeight=30)
 while not gameOver:
     # interactivity ------------
@@ -349,11 +355,15 @@ while not gameOver:
             try:
                 invBull[1] += bulletSpeed
                 # if intersect with player
-                if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)):
+                if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)) and not playerStart:
                     playerDeathSnd.play()
-                    pY = -1000
+                    numLives -= 1
+                    playerStart = True
+                    #pY = -1000
+                    pX = screenWidth//2-pWidth//2
                     invBull[1] = screenHeight + 1
-                    gameState = END
+                    if numLives <= 0:
+                        gameState = END
                 # if intersect with sheild
                 for shield in shields:
                     if shield.destroyOnHit(invBull):
@@ -370,7 +380,25 @@ while not gameOver:
 
     if gameState == PLAY:
         # Player
-        pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+        if playerStart and flashCount < numFlashes:
+            if flashCount % 2 == 0:
+                pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+            if flashCounter > flashTime:
+                flashCounter = 0
+                flashCount += 1
+        elif flashCount >= numFlashes:
+            playerStart = False
+            flashCount = 0
+        if not playerStart:
+            pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+
+        # playerLives
+        if numLives >= 1:
+            pygame.draw.rect(screen,pCol,(screenWidth-padding-pWidth/3,padding,pWidth/3,pHeight/3))
+        if numLives >= 2:
+            pygame.draw.rect(screen,pCol,(screenWidth-padding*1.5-pWidth/3*2,padding,pWidth/3,pHeight/3))
+        if numLives >= 3:
+            pygame.draw.rect(screen,pCol,(screenWidth-padding*2-pWidth/3*3,padding,pWidth/3,pHeight/3))
 
         # Player Bullet
         pygame.draw.rect(screen,pBulletCol,(pBulletX,pBulletY,bulletW,bulletH))
@@ -405,6 +433,7 @@ while not gameOver:
     tick = clock.tick(30)
     timeCounter += tick # time since last tick in Milliseconds (attempts to maintain 30FPS)
     ufoCounter += tick
+    flashCounter += tick
     pygame.display.update()
 
 pygame.quit()
