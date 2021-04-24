@@ -99,6 +99,11 @@ pX = screenWidth//2 - pWidth//2
 pY = screenHeight - pHeight - padding
 playerSpeed = 10
 pCol = (0,255,0)
+numLives = 3
+playerStart = True
+flashTime = 100
+numFlashes = 12
+flashCount = 0
 
 # Bullets
 bulletW = 3
@@ -129,8 +134,9 @@ for s in range(numShields):
 pygame.font.init()
 # Menus
 arcadeFont = pygame.font.Font("ARCADECLASSIC.TTF",100)
+arcadeFontSmall = pygame.font.Font("ARCADECLASSIC.TTF",30)
 menuFontColor = (255,255,255)
-PLAY, END, HIGHSCORE = 0, 1, 2 
+PLAY, END, HIGHSCORE, VICTORY = 0, 1, 2, 3
 gameState = PLAY
 
 
@@ -141,6 +147,7 @@ class Invader():
         self.w, self.h = w,h
         self.f = f
         self.c = col
+        self.oddMove = 0
     def hitRect(self,r):
         return rectRectIntersect((r[0],r[1],r[2],r[3]),(self.x,self.y,self.w, self.h))
     def draw(self, surf, font):
@@ -148,6 +155,13 @@ class Invader():
         invaderRect = invaderCharacter.get_rect()
         invaderRect.topleft = (self.x,self.y)
         surf.blit(invaderCharacter, invaderRect)
+    def animate(self):
+        if self.oddMove == 0:
+            self.oddMove = 1
+            self.f = chr(ord(self.f)+1)
+        else:
+            self.oddMove = 0
+            self.f = chr(ord(self.f)-1)
 
 class Invaders():
     def __init__(self, numRows, numCols, invHeight = 32, invWidth = 32, invCol = (0,255,0), invTime = 1000, invFont = "invaders.ttf"):
@@ -165,11 +179,13 @@ class Invaders():
         self.initInvaders()
 
     def initInvaders(self):
-        xSpc = screenWidth // (self.invRows *3)
-        ySpc = xSpc
+        #xSpc = screenWidth // (self.invRows *3)
+        xSpc = self.invaderWidth * 2
+        ySpc = xSpc * 0.8
+        invLetters = ['A','C','G','E','I']
         for y in range(self.invRows):
             for x in range(self.invCols):
-                self.invaders.append(Invader(x*xSpc+xSpc,y*ySpc+ySpc,self.invaderWidth,self.invaderHeight,random.choice(['a','b','c','d','e','z','g','h','i']),self.invaderCol))
+                self.invaders.append(Invader(x*xSpc+xSpc,y*ySpc+ySpc,self.invaderWidth,self.invaderHeight,invLetters[y],self.invaderCol))
         self.calcLastRow()
 
     def calcLastRow(self):
@@ -194,6 +210,7 @@ class Invaders():
             self.soundCount = 0
         for invader in self.invaders:
             invader.x += self.invaderWidth * self.invDir
+            invader.animate()
         for invader in self.invaders:
             if invader.x >= screenWidth or invader.x <= 0:
                 self.invDir *= -1
@@ -223,12 +240,17 @@ class Invaders():
         for invader in self.invaders:
             invader.draw(surf,self.invaderFont)
 
+    def num(self):
+        return len(self.invaders) 
+
 clock = pygame.time.Clock()
 gameOver = False
 moveDir = 0
 playerFire = False
 timeCounter = 0
-allInvaders = Invaders(5,10,invWidth=30,invHeight=30)
+flashCounter = 0
+score = 0
+allInvaders = Invaders(4,10,invWidth=25,invHeight=25)
 while not gameOver:
     # interactivity ------------
     for event in pygame.event.get():
@@ -247,6 +269,7 @@ while not gameOver:
                 allInvaders.invTimer *= 0.9
             if event.key == pygame.K_BACKSLASH:
                 allInvaders.invaders.remove(random.choice(allInvaders.invaders))
+                allInvaders.calcLastRow()
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
@@ -255,7 +278,12 @@ while not gameOver:
     if gameState == PLAY:
         # Player Movement
         pX += moveDir
+        if pX < 0:
+            pX = 0
 
+        if pX + pWidth > screenWidth:
+            pX = screenWidth - pWidth
+            
         # Invaders Movment
         if timeCounter >= allInvaders.invTimer:
             timeCounter -= allInvaders.invTimer
@@ -264,14 +292,17 @@ while not gameOver:
             #Check if invader intersect player
             for inv in allInvaders.invaders:
                 if rectRectIntersect((inv.x,inv.y,inv.h,inv.w),(pX,pY,pWidth,pHeight)):
-                        playerDeathSnd.play()
-                        gameState = END
-
+                    playerDeathSnd.play()
+                    gameState = END
+        
+            if allInvaders.num() == 0:
+                gameState = VICTORY
+        
         #Check if invader intersect shield
         for inv in allInvaders.invaders:
             for shield in shields:
                 if shield.destroyOnHit((inv.x,inv.y,inv.h,inv.w)):
-                    pass
+                   pass
 
         
         # Bullets
@@ -288,6 +319,7 @@ while not gameOver:
             pBulletY -= bulletSpeed
             if allInvaders.destroyIfHit((pBulletX,pBulletY,bulletW,bulletH)):
                 pBulletY = -100
+                score += 100
             for shield in shields:
                 if shield.destroyOnHit((pBulletX,pBulletY,bulletW,bulletH)):
                         pBulletY = -100
@@ -298,11 +330,15 @@ while not gameOver:
             try:
                 invBull[1] += bulletSpeed
                 # if intersect with player
-                if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)):
+                if rectRectIntersect(invBull,(pX,pY,pWidth,pHeight)) and not playerStart:
                     playerDeathSnd.play()
-                    pY = -1000
+                    #pY = -1000
+                    pX = screenWidth//2 - pWidth//2
                     invBull[1] = screenHeight + 1
-                    gameState = END
+                    numLives -= 1
+                    playerStart = True
+                    if numLives == 0:
+                        gameState = END
                 # if intersect with sheild
                 for shield in shields:
                     if shield.destroyOnHit(invBull):
@@ -319,7 +355,18 @@ while not gameOver:
 
     if gameState == PLAY:
         # Player
-        pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+
+        if playerStart:
+            if flashCount % 2 == 0:
+                pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
+            if flashCounter > flashTime:
+                flashCount += 1
+                flashCounter = 0
+            if flashCount > numFlashes:
+                flashCount = 0
+                playerStart = False
+        else:
+            pygame.draw.rect(screen,pCol,(pX,pY,pWidth,pHeight))
 
         # Player Bullet
         pygame.draw.rect(screen,pBulletCol,(pBulletX,pBulletY,bulletW,bulletH))
@@ -334,13 +381,35 @@ while not gameOver:
 
         # Invaders
         allInvaders.draw(screen)
+
+        # Score
+        scoreText = arcadeFontSmall.render("score " + str(score),True,menuFontColor)
+        scoreTextRect = scoreText.get_rect()
+        scoreTextRect.topleft = (padding,padding)
+        screen.blit(scoreText,scoreTextRect)
+
+        # lives
+        if numLives >= 1:
+            pygame.draw.rect(screen,pCol,(screenWidth-pWidth/3-padding,padding,pWidth/3,pHeight/3))
+        if numLives >= 2:
+            pygame.draw.rect(screen,pCol,(screenWidth-pWidth/3*2-padding*2,padding,pWidth/3,pHeight/3))
+        if numLives >= 3:
+            pygame.draw.rect(screen,pCol,(screenWidth-pWidth/3*3-padding*3,padding,pWidth/3,pHeight/3))
+
     elif gameState == END:
         gameOverText = arcadeFont.render("GAME     OVER",True,menuFontColor)
         gameOverTextRect = gameOverText.get_rect()
         gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
         screen.blit(gameOverText, gameOverTextRect)
+    elif gameState == VICTORY:
+        gameOverText = arcadeFont.render("VICTORY       :)",True,menuFontColor)
+        gameOverTextRect = gameOverText.get_rect()
+        gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
+        screen.blit(gameOverText, gameOverTextRect)
     
-    timeCounter += clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
+    tick = clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
+    timeCounter += tick
+    flashCounter += tick
     pygame.display.update()
 
 pygame.quit()
