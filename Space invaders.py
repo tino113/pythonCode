@@ -14,6 +14,7 @@ invMove3Snd = pygame.mixer.Sound("fastinvader3.wav")
 invMove4Snd = pygame.mixer.Sound("fastinvader4.wav")
 invMoveSnds = [invMove1Snd,invMove2Snd,invMove3Snd,invMove4Snd]
 playerDeathSnd = pygame.mixer.Sound("explosion.wav")
+UfoLoopSnd = pygame.mixer.Sound ("UfoSound.wav")
 #spaceship = pygame.mixer.Sound("")
 
 
@@ -114,7 +115,7 @@ bulletSpeed = 8
 # Player Bullet
 pBulletX = -100
 pBulletY = -100
-pBulletCol = (0,0,255)
+pBulletCol = (0,255,255)
 
 # Invader Bullets
 invBullets = []
@@ -243,6 +244,22 @@ class Invaders():
     def num(self):
         return len(self.invaders) 
 
+# UFO VARIABLES
+# create the variables for the UFO, position in x, position in y, 
+# sound, points, speed, colour, choice between two possible characters
+# set a minumum start time and a 'random chance' for UFO to appear
+# make a timer to count up to minimum time.
+UfoX = -1000
+UfoY = 20
+UfoHeight = 24
+UfoTimer = 0
+UfoMinTime = 5000
+UfoPercentChance = 1
+UfoSpeed = 2
+UfoMoving = False
+UfoFont = pygame.font.Font("Invaders.ttf",UfoHeight)
+
+
 clock = pygame.time.Clock()
 gameOver = False
 moveDir = 0
@@ -348,6 +365,32 @@ while not gameOver:
             except:
                 pass
 
+        # UFO movement
+        # after a minimum amount of time
+        if UfoTimer >= UfoMinTime and not UfoMoving:
+            if random.uniform(0,100) < UfoPercentChance: # on a random chance
+                UfoX = screenWidth
+                UfoMoving = True
+                UfoLoopSnd.play(-1) # start the sound playing (and loop it)
+        
+        if UfoMoving:
+            # start the UFO moving from the right side of the screen (off screen)
+            # move towards the left
+            UfoX -= UfoSpeed
+            # check intersection with the player bullet
+            if rectRectIntersect((pBulletX,pBulletY,bulletW,bulletH),(UfoX,UfoY,UfoHeight,UfoHeight)):
+                score += 1000# if it hits give 1000 points
+                UfoX = -1000 # destroy the UFO
+                UfoTimer = 0# reset the timer
+                UfoMoving = False
+                invDeathSnd.play()# play the destrouyed sound
+                UfoLoopSnd.stop()# stop the looped sound
+            if UfoX + UfoHeight < 0:
+                UfoX = -1000 # destroy the UFO
+                UfoTimer = 0# reset the timer
+                UfoMoving = False
+                UfoLoopSnd.stop()# stop the looped sound
+
         # Drawing ------------------ 
     
         # Clear Screen
@@ -382,6 +425,13 @@ while not gameOver:
         # Invaders
         allInvaders.draw(screen)
 
+        # UFO
+        # using the invader font, draw the correct character on screen
+        UfoCharacter = UfoFont.render("1",True, (255,0,0))
+        UfoRect = UfoCharacter.get_rect()
+        UfoRect.topleft = (UfoX,UfoY)
+        screen.blit(UfoCharacter, UfoRect)
+
         # Score
         scoreText = arcadeFontSmall.render("score " + str(score),True,menuFontColor)
         scoreTextRect = scoreText.get_rect()
@@ -410,6 +460,7 @@ while not gameOver:
     tick = clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
     timeCounter += tick
     flashCounter += tick
+    UfoTimer += tick
     pygame.display.update()
 
 pygame.quit()
