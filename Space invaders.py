@@ -17,6 +17,42 @@ playerDeathSnd = pygame.mixer.Sound("explosion.wav")
 UfoLoopSnd = pygame.mixer.Sound ("UfoSound.wav")
 #spaceship = pygame.mixer.Sound("")
 
+class HighScore():
+    def __init__(self,filename):
+        try:
+            self.f = open(filename, 'r+')
+        except:
+            self.f = open(filename, 'w')
+        self.f.close()
+        self.fName = filename
+        
+    def save(self,name,score):
+        self.f = open(self.fName, "r+")
+        foundSmaller = False
+        lineList = self.f.readlines()
+        self.f.close()
+        i = 0
+        while not foundSmaller:
+            lnScore = int(lineList[i].split(" ")[1][:-1])
+            if lnScore < score:
+                foundSmaller = True
+            i += 1
+        lineList.insert(i-1,name + " " + str(score) + '\n')
+        self.f = open(self.fName, "w")
+        for line in lineList:
+            self.f.write(line)
+        self.f.close()
+
+    def drawTop5(self, surf):
+        self.f = open(self.fName, "r")
+        for i in range(5):
+            line = self.f.readline()[:-1]
+            highScoreText = arcadeFontSmall.render(line,True,menuFontColor)
+            highScoreTextRect = highScoreText.get_rect()
+            highScoreTextRect.center = (screenWidth//2,screenHeight//2 - 80 + (i+1) * 40)
+            surf.blit(highScoreText, highScoreTextRect)
+        self.f.close()
+
 
 def pointRectIntersect(pt, r):
     rx,ry,rw,rh = r[0],r[1],r[2],r[3]
@@ -75,7 +111,7 @@ class Multiblock():
         for block in self.blocks:
             pygame.draw.rect(screen, self.col, block)
         return screen
-
+ 
     def checkHit(self, r):
         for block in self.blocks:
             if rectRectIntersect(block,r):
@@ -137,7 +173,7 @@ pygame.font.init()
 arcadeFont = pygame.font.Font("ARCADECLASSIC.TTF",100)
 arcadeFontSmall = pygame.font.Font("ARCADECLASSIC.TTF",30)
 menuFontColor = (255,255,255)
-PLAY, END, HIGHSCORE, VICTORY = 0, 1, 2, 3
+PLAY, END, HIGHSCORE, VICTORY, NAMESCREEN = 0, 1, 2, 3, 4
 gameState = PLAY
 
 
@@ -254,7 +290,7 @@ UfoY = 20
 UfoHeight = 24
 UfoTimer = 0
 UfoMinTime = 5000
-UfoPercentChance = 1
+UfoPercentChance = 0.01
 UfoSpeed = 2
 UfoMoving = False
 UfoFont = pygame.font.Font("Invaders.ttf",UfoHeight)
@@ -268,6 +304,10 @@ timeCounter = 0
 flashCounter = 0
 score = 0
 allInvaders = Invaders(4,10,invWidth=25,invHeight=25)
+hScore = HighScore("spaceInvadersHS.txt")
+scoreSaved = False
+nameScreenNumKeysPressed = 0
+name = ""
 while not gameOver:
     # interactivity ------------
     for event in pygame.event.get():
@@ -280,6 +320,8 @@ while not gameOver:
                 moveDir = playerSpeed
             if event.key == pygame.K_SPACE:
                 playerFire = True
+                if gameState == END or gameState == VICTORY:
+                    gameState = NAMESCREEN
             if event.key == pygame.K_LEFTBRACKET:
                 allInvaders.invTimer *= 1.1
             if event.key == pygame.K_RIGHTBRACKET:
@@ -287,6 +329,11 @@ while not gameOver:
             if event.key == pygame.K_BACKSLASH:
                 allInvaders.invaders.remove(random.choice(allInvaders.invaders))
                 allInvaders.calcLastRow()
+            if gameState == NAMESCREEN:
+                name += event.unicode
+                nameScreenNumKeysPressed += 1
+            if nameScreenNumKeysPressed >= 3:
+                gamestate = HIGHSCORE
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
@@ -396,6 +443,11 @@ while not gameOver:
         # Clear Screen
         screen.fill((0,0,10))
 
+    elif gameState == HIGHSCORE:
+        if not scoreSaved:
+            hScore.save(name, score)
+            scoreSaved = True
+
     if gameState == PLAY:
         # Player
 
@@ -456,6 +508,19 @@ while not gameOver:
         gameOverTextRect = gameOverText.get_rect()
         gameOverTextRect.center = (screenWidth//2,screenHeight//2 - 50)
         screen.blit(gameOverText, gameOverTextRect)
+    elif gameState == NAMESCREEN:
+        screen.fill((0,0,10))
+        nameScreenText = arcadeFont.render("ENTER NAME",True,menuFontColor)
+        nameScreenTextRect = nameScreenText.get_rect()
+        nameScreenTextRect.center = (screenWidth//2,screenHeight//2 - 100)
+        screen.blit(nameScreenText, nameScreenTextRect)
+    elif gameState == HIGHSCORE:
+        screen.fill((0,0,10))
+        highScoreText = arcadeFont.render("HIGH SCORES",True,menuFontColor)
+        highScoreTextRect = highScoreText.get_rect()
+        highScoreTextRect.center = (screenWidth//2,screenHeight//2 - 100)
+        screen.blit(highScoreText, highScoreTextRect)
+        hScore.drawTop5(screen)
     
     tick = clock.tick(30) # time since last tick in Milliseconds (attempts to maintain 30FPS)
     timeCounter += tick
