@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, string
 
 pygame.init()
 screenWidth, screenHeight = 800, 600
@@ -330,10 +330,13 @@ while not gameOver:
                 allInvaders.invaders.remove(random.choice(allInvaders.invaders))
                 allInvaders.calcLastRow()
             if gameState == NAMESCREEN:
-                name += event.unicode
-                nameScreenNumKeysPressed += 1
-            if nameScreenNumKeysPressed >= 3:
-                gamestate = HIGHSCORE
+                if event.unicode in string.ascii_letters:
+                    if nameScreenNumKeysPressed < 3:
+                        name += event.unicode
+                    nameScreenNumKeysPressed += 1
+                if nameScreenNumKeysPressed >= 4:
+                    gameState = HIGHSCORE
+                    nameScreenNumKeysPressed == 0
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_a or event.key == pygame.K_d:
                 moveDir = 0
@@ -443,7 +446,7 @@ while not gameOver:
         # Clear Screen
         screen.fill((0,0,10))
 
-    elif gameState == HIGHSCORE:
+    if gameState == HIGHSCORE:
         if not scoreSaved:
             hScore.save(name, score)
             scoreSaved = True
@@ -514,6 +517,10 @@ while not gameOver:
         nameScreenTextRect = nameScreenText.get_rect()
         nameScreenTextRect.center = (screenWidth//2,screenHeight//2 - 100)
         screen.blit(nameScreenText, nameScreenTextRect)
+        nameText = arcadeFontSmall.render(name,True,menuFontColor)
+        nameTextRect = nameText.get_rect()
+        nameTextRect.center = (screenWidth//2,screenHeight//2 - 50)
+        screen.blit(nameText, nameTextRect)
     elif gameState == HIGHSCORE:
         screen.fill((0,0,10))
         highScoreText = arcadeFont.render("HIGH SCORES",True,menuFontColor)
